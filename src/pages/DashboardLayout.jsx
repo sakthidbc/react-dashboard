@@ -4,6 +4,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchUser, fetchPermissions } from '../store/slices/authSlice';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
+import SessionTimeoutModal from '../components/SessionTimeoutModal';
+import useSessionTimeout from '../hooks/useSessionTimeout';
 
 const DashboardLayout = () => {
   const dispatch = useDispatch();
@@ -13,6 +15,24 @@ const DashboardLayout = () => {
   const [sidebarPosition, setSidebarPosition] = useState(() => {
     return localStorage.getItem('sidebarPosition') || 'vertical';
   });
+  const [showTimeoutModal, setShowTimeoutModal] = useState(false);
+  const [remainingTime, setRemainingTime] = useState(5 * 60 * 1000); // 5 minutes default
+
+  // Handle session timeout warning
+  const handleWarning = (timeRemaining) => {
+    setRemainingTime(timeRemaining);
+    setShowTimeoutModal(true);
+  };
+
+  // Initialize session timeout
+  const { resetSession } = useSessionTimeout(handleWarning);
+
+  // Extend session handler
+  const handleExtendSession = () => {
+    setShowTimeoutModal(false);
+    // Reset the session timer
+    resetSession();
+  };
 
   useEffect(() => {
     if (!token) {
@@ -61,29 +81,39 @@ const DashboardLayout = () => {
   const isVertical = sidebarPosition === 'vertical';
 
   return (
-    <div className="min-h-screen transition-colors">
-      {isVertical ? (
-        <>
-          <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} position="vertical" />
-          <div className={`min-h-screen transition-all duration-300 ${sidebarOpen ? 'lg:ml-56' : 'lg:ml-0'}`}>
-            <Topbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-            <main className="min-h-[calc(100vh-56px)]">
-              <Outlet />
-            </main>
+    <>
+      <div className="min-h-screen transition-colors">
+        {isVertical ? (
+          <>
+            <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} position="vertical" />
+            <div className={`min-h-screen transition-all duration-300 ${sidebarOpen ? 'lg:ml-56' : 'lg:ml-0'}`}>
+              <Topbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+              <main className="min-h-[calc(100vh-56px)]">
+                <Outlet />
+              </main>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col h-screen">
+            <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} position="horizontal" />
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <Topbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+              <main className="flex-1 overflow-auto">
+                <Outlet />
+              </main>
+            </div>
           </div>
-        </>
-      ) : (
-        <div className="flex flex-col h-screen">
-          <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} position="horizontal" />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <Topbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-            <main className="flex-1 overflow-auto">
-              <Outlet />
-            </main>
-          </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+
+      {/* Session Timeout Modal */}
+      <SessionTimeoutModal
+        isOpen={showTimeoutModal}
+        onClose={() => setShowTimeoutModal(false)}
+        remainingTime={remainingTime}
+        onExtend={handleExtendSession}
+      />
+    </>
   );
 };
 

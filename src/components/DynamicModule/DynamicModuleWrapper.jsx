@@ -39,7 +39,8 @@ const DynamicModuleWrapper = ({ type = 'list' }) => {
       }
 
       const config = moduleToRouteConfig(module);
-      const service = createDynamicModuleService(module.name, module.table_name);
+      // Use the apiRoute from config (which is kebab-case)
+      const service = createDynamicModuleService(module.table_name, config.apiRoute);
       
       setModuleConfig(config);
       setApiService(service);

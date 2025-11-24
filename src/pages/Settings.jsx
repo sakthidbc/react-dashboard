@@ -1,26 +1,40 @@
 import { useState, useEffect } from 'react';
-import { Palette, Save } from 'lucide-react';
-import { getSettings, updateSettings } from '../services/apiService';
+import { Navigate } from 'react-router-dom';
+import { Palette, Save, Users, Ban, CheckCircle } from 'lucide-react';
+import { getSettings, updateUserSettings, getSettingsUsers, toggleUserBlock } from '../services/apiService';
+import { usePermissions } from '../hooks/usePermissions';
+import Can from '../components/Can';
 import toast from 'react-hot-toast';
 
 const Settings = () => {
+  const { hasPermission } = usePermissions();
   const [isLoading, setIsLoading] = useState(false);
-  const [settings, setSettings] = useState({
+  const [userSettings, setUserSettings] = useState({
     theme: localStorage.getItem('theme') || 'system',
     sidebarToggle: true,
   });
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
     loadSettings();
+    loadUsers();
   }, []);
+
+  // Check if user has read permission for settings (after all hooks)
+  if (!hasPermission('settings', 'read')) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
 
   const loadSettings = async () => {
     try {
       const response = await getSettings();
-      if (response.data && response.data.settings) {
-        const savedSettings = JSON.parse(response.data.settings);
-        setSettings(prev => ({ ...prev, ...savedSettings }));
-        applySettings(savedSettings);
+      if (response.data) {
+        // Load user settings
+        if (response.data.user_settings) {
+          const savedSettings = JSON.parse(response.data.user_settings);
+          setUserSettings(prev => ({ ...prev, ...savedSettings }));
+          applySettings(savedSettings);
+        }
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -29,12 +43,21 @@ const Settings = () => {
       if (savedSettings) {
         try {
           const parsed = JSON.parse(savedSettings);
-          setSettings(prev => ({ ...prev, ...parsed }));
+          setUserSettings(prev => ({ ...prev, ...parsed }));
           applySettings(parsed);
         } catch (e) {
           console.error('Error parsing localStorage settings:', e);
         }
       }
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const response = await getSettingsUsers();
+      setUsers(response.data || []);
+    } catch (error) {
+      console.error('Error loading users:', error);
     }
   };
 
@@ -45,7 +68,7 @@ const Settings = () => {
   };
 
   const handleThemeChange = (theme) => {
-    setSettings(prev => ({ ...prev, theme }));
+    setUserSettings(prev => ({ ...prev, theme }));
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
@@ -63,23 +86,35 @@ const Settings = () => {
     }
   };
 
-  const handleSidebarToggleChange = (value) => {
-    setSettings(prev => ({ ...prev, sidebarToggle: value }));
-  };
-
-  const handleSave = async () => {
+  const handleSaveUserSettings = async () => {
     setIsLoading(true);
     try {
-      await updateSettings({ settings: JSON.stringify(settings) });
-      localStorage.setItem('appSettings', JSON.stringify(settings));
-      toast.success('Settings saved successfully!');
+      await updateUserSettings({ settings: JSON.stringify(userSettings) });
+      localStorage.setItem('appSettings', JSON.stringify(userSettings));
+      toast.success('User settings saved successfully!');
     } catch (error) {
-      // Fallback to localStorage
-      localStorage.setItem('appSettings', JSON.stringify(settings));
+      localStorage.setItem('appSettings', JSON.stringify(userSettings));
       toast.success('Settings saved locally!');
       console.error('Error saving settings:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleToggleUserBlock = async (userId) => {
+    try {
+      const response = await toggleUserBlock(userId);
+      if (response.data) {
+        setUsers(users.map(user => 
+          user.id === userId 
+            ? { ...user, is_blocked: response.data.user.is_blocked }
+            : user
+        ));
+        toast.success(response.data.message);
+      }
+    } catch (error) {
+      toast.error('Failed to update user status');
+      console.error('Error toggling user block:', error);
     }
   };
 
@@ -104,7 +139,7 @@ const Settings = () => {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Settings</h1>
-          <p className="text-gray-600 dark:text-gray-400">Customize your application preferences</p>
+          <p className="text-gray-600 dark:text-gray-400">Customize your application preferences and system settings</p>
         </div>
 
         <div className="space-y-6">
@@ -124,7 +159,7 @@ const Settings = () => {
                   <button
                     onClick={() => handleThemeChange('light')}
                     className={`p-4 border-2 rounded-lg transition-all ${
-                      settings.theme === 'light'
+                      userSettings.theme === 'light'
                         ? 'border-primary bg-primary/10 dark:bg-primary/20'
                         : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                     }`}
@@ -137,7 +172,7 @@ const Settings = () => {
                   <button
                     onClick={() => handleThemeChange('dark')}
                     className={`p-4 border-2 rounded-lg transition-all ${
-                      settings.theme === 'dark'
+                      userSettings.theme === 'dark'
                         ? 'border-primary bg-primary/10 dark:bg-primary/20'
                         : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                     }`}
@@ -150,7 +185,7 @@ const Settings = () => {
                   <button
                     onClick={() => handleThemeChange('system')}
                     className={`p-4 border-2 rounded-lg transition-all ${
-                      settings.theme === 'system'
+                      userSettings.theme === 'system'
                         ? 'border-primary bg-primary/10 dark:bg-primary/20'
                         : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                     }`}
@@ -163,29 +198,82 @@ const Settings = () => {
                 </div>
               </div>
             </div>
+            <Can module="settings" action="update">
+              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={handleSaveUserSettings}
+                  disabled={isLoading}
+                  className="px-6 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary-hover transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Save Appearance Settings
+                    </>
+                  )}
+                </button>
+              </div>
+            </Can>
           </SettingSection>
 
-
-          {/* Save Button */}
-          <div className="flex justify-end">
-            <button
-              onClick={handleSave}
-              disabled={isLoading}
-              className="px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary-hover transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          {/* User Management */}
+          <Can module="settings" action="read">
+            <SettingSection
+              icon={Users}
+              title="User Management"
+              description="Block or unblock users to prevent or allow login access"
             >
-              {isLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Saving...
-                </>
+            <div className="space-y-3">
+              {users.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                  No users found
+                </p>
               ) : (
-                <>
-                  <Save className="w-5 h-5" />
-                  Save Settings
-                </>
+                users.map((user) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900 dark:text-white">{user.name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {user.is_blocked ? (
+                        <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full text-xs font-medium flex items-center gap-1">
+                          <Ban className="w-3 h-3" />
+                          Blocked
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          Active
+                        </span>
+                      )}
+                      <Can module="settings" action="update">
+                        <button
+                          onClick={() => handleToggleUserBlock(user.id)}
+                          className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                            user.is_blocked
+                              ? 'bg-green-600 hover:bg-green-700 text-white'
+                              : 'bg-red-600 hover:bg-red-700 text-white'
+                          }`}
+                        >
+                          {user.is_blocked ? 'Unblock' : 'Block'}
+                        </button>
+                      </Can>
+                    </div>
+                  </div>
+                ))
               )}
-            </button>
-          </div>
+            </div>
+          </SettingSection>
+          </Can>
         </div>
       </div>
     </div>

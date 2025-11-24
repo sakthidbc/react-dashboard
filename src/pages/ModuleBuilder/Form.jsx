@@ -41,11 +41,18 @@ const ModuleBuilderForm = () => {
           { value: 'number', label: 'Number' },
           { value: 'date', label: 'Date' },
           { value: 'datetime', label: 'Date & Time' },
+          { value: 'time', label: 'Time' },
           { value: 'boolean', label: 'Boolean (Yes/No)' },
           { value: 'image', label: 'Image' },
           { value: 'file', label: 'File' },
           { value: 'url', label: 'URL' },
           { value: 'email', label: 'Email' },
+          { value: 'select', label: 'Select (Dropdown)' },
+          { value: 'multiselect', label: 'Multi-Select' },
+          { value: 'radio', label: 'Radio Buttons' },
+          { value: 'checkbox', label: 'Checkbox' },
+          { value: 'color', label: 'Color Picker' },
+          { value: 'json', label: 'JSON' },
         ]);
       }
     } catch (error) {
@@ -273,7 +280,9 @@ const ModuleBuilderForm = () => {
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
                     placeholder="birthday"
                   />
-                  <p className="mt-1 text-xs text-gray-500">Only letters, numbers, and underscores allowed</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Only letters, numbers, and underscores allowed. Use PascalCase (e.g., ContactUs, ProductList) for best results.
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

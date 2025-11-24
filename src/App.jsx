@@ -47,6 +47,7 @@ import RolesForm from './pages/Roles/Form';
 import UsersList from './pages/Users/List';
 import UsersForm from './pages/Users/Form';
 import LogsList from './pages/Logs/List';
+import ContactList from './pages/ContactList/List';
 import ProtectedRoute from './components/ProtectedRoute';
 import WebsiteLayout from './website/WebsiteLayout';
 import Home from './website/pages/Home';
@@ -128,7 +129,8 @@ const AppRoutes = () => {
         <Route path="users/create" element={<UsersForm />} />
         <Route path="users/edit/:id" element={<UsersForm />} />
         <Route path="logs" element={<LogsList />} />
-        <Route path="restore" element={<Restore />} />} />} />} />} />} />} />} />} />} />
+        <Route path="contact-list" element={<ContactList />} />
+        <Route path="restore" element={<Restore />} />} />
 {/* Dynamic Module Routes - catch-all for generated modules (must be last) */}
         <Route path=":moduleName" element={<DynamicModuleWrapper type="list" />} />
         <Route path=":moduleName/create" element={<DynamicModuleWrapper type="form" />} />

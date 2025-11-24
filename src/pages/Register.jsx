@@ -5,6 +5,8 @@ import { Mail, Lock, User, Eye, EyeOff, UserPlus, Sparkles } from 'lucide-react'
 import { register } from '../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import { isLockedOut } from '../utils/loginAttempts';
+import LockoutWarning from '../components/LockoutWarning';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -15,6 +17,7 @@ const Register = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showLockoutWarning, setShowLockoutWarning] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isLoading, isAuthenticated } = useSelector((state) => state.auth);
@@ -24,6 +27,22 @@ const Register = () => {
       navigate('/admin/dashboard');
     }
   }, [isAuthenticated, navigate]);
+
+  // Check for lockout on mount
+  useEffect(() => {
+    const checkLockout = () => {
+      const lockout = isLockedOut();
+      if (lockout && lockout.locked) {
+        setShowLockoutWarning(true);
+        toast.error('Account is locked. Please wait before accessing this page.');
+      }
+    };
+
+    checkLockout();
+    const interval = setInterval(checkLockout, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const validateForm = () => {
     if (!formData.name || formData.name.trim().length < 2) {
@@ -68,6 +87,26 @@ const Register = () => {
       toast.error(error || 'Registration failed. Please try again.');
     }
   };
+
+  // If locked out, show warning and prevent access
+  const lockout = isLockedOut();
+  if (lockout && lockout.locked) {
+    return (
+      <>
+        <div className="min-h-screen flex items-center justify-center p-4 py-8 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+          <div className="text-center">
+            <p className="text-gray-600 dark:text-gray-400">Redirecting...</p>
+          </div>
+        </div>
+        {showLockoutWarning && (
+          <LockoutWarning onClose={() => {
+            setShowLockoutWarning(false);
+            navigate('/admin/login');
+          }} />
+        )}
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 py-8 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">

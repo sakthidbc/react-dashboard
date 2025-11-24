@@ -27,8 +27,8 @@ const LogoutModal = ({ isOpen, onClose }) => {
         onClick={onClose}
         className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
       />
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 max-w-md w-full shadow-xl">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 max-w-md w-full shadow-xl my-auto">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-accent/10 dark:bg-accent/20 rounded-lg">

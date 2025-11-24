@@ -93,12 +93,13 @@ export const changePassword = (data) => {
   return api.post('/profile/change-password', data);
 };
 
+// Settings - User settings (legacy, kept for backward compatibility)
 export const getSettings = () => {
   return api.get('/settings');
 };
 
 export const updateSettings = (data) => {
-  return api.post('/settings', data);
+  return api.post('/settings/user', data);
 };
 
 // Slider Images API
@@ -560,6 +561,48 @@ export const getLogStatistics = () => {
 
 export const getLogFilterOptions = () => {
   return api.get('/logs/filter-options');
+};
+
+export const deleteLog = (id) => {
+  return api.delete(`/logs/${id}`);
+};
+
+export const restoreLog = (id) => {
+  return api.post(`/logs/${id}/restore`);
+};
+
+// Contact List
+export const getContactList = (params = '') => {
+  return api.get(`/contact-us${params ? '?' + params : ''}`);
+};
+
+export const getContact = (id) => {
+  return api.get(`/contact-us/${id}`);
+};
+
+export const deleteContact = (id) => {
+  return api.delete(`/contact-us/${id}`);
+};
+
+// Settings - Additional methods
+export const updateUserSettings = (data) => {
+  return api.post('/settings/user', data);
+};
+
+export const updateSystemSettings = (data) => {
+  return api.post('/settings/system', data);
+};
+
+export const uploadLogo = (data) => {
+  return api.post('/settings/logo', data);
+};
+
+export const getSettingsUsers = () => {
+  return api.get('/settings/users');
+};
+
+export const toggleUserBlock = (userId) => {
+  return api.post(`/settings/users/${userId}/toggle-block`);
 };
 
 export default api;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Save, ArrowLeft, Loader, Shield, Users, X } from 'lucide-react';
+import { Save, ArrowLeft, Loader, Shield, Users, X, Check, X as XIcon, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getRole, createRole, updateRole, getPermissionOptions, getUsers } from '../../services/apiService';
 import RichTextEditor from '../../components/RichTextEditor';
@@ -15,6 +15,7 @@ const RolesForm = () => {
   const [actions, setActions] = useState({});
   const [allUsers, setAllUsers] = useState([]);
   const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -121,18 +122,65 @@ const RolesForm = () => {
     });
   };
 
-  const handleModuleSelectAll = (module, checked) => {
+  const handleModuleSelectAll = (module) => {
     const moduleActions = Object.keys(actions);
+    
     setFormData(prev => {
       const newPermissions = { ...prev.permissions };
-      if (checked) {
-        newPermissions[module] = [...moduleActions];
-      } else {
+      const currentModulePermissions = newPermissions[module] || [];
+      const isAllSelected = moduleActions.length > 0 && 
+                           moduleActions.every(action => currentModulePermissions.includes(action));
+      
+      if (isAllSelected) {
+        // If all are selected, deselect all
         delete newPermissions[module];
+      } else {
+        // If not all are selected, select all
+        newPermissions[module] = [...moduleActions];
       }
       return { ...prev, permissions: newPermissions };
     });
   };
+
+  const handleSelectAllModules = () => {
+    const moduleActions = Object.keys(actions);
+    setFormData(prev => {
+      const newPermissions = { ...prev.permissions };
+      Object.keys(modules).forEach(moduleKey => {
+        newPermissions[moduleKey] = [...moduleActions];
+      });
+      return { ...prev, permissions: newPermissions };
+    });
+  };
+
+  const handleDeselectAllModules = () => {
+    setFormData(prev => {
+      return { ...prev, permissions: {} };
+    });
+  };
+
+  const areAllModulesSelected = () => {
+    const moduleActions = Object.keys(actions);
+    if (moduleActions.length === 0) return false;
+    
+    return Object.keys(modules).every(moduleKey => {
+      const modulePermissions = formData.permissions[moduleKey] || [];
+      return moduleActions.every(action => modulePermissions.includes(action));
+    });
+  };
+
+  const areSomeModulesSelected = () => {
+    return Object.keys(modules).some(moduleKey => {
+      return formData.permissions[moduleKey] && formData.permissions[moduleKey].length > 0;
+    });
+  };
+
+  // Filter modules based on search query
+  const filteredModules = Object.entries(modules).filter(([moduleKey, moduleName]) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return moduleName.toLowerCase().includes(query) || moduleKey.toLowerCase().includes(query);
+  });
 
   const isModuleAllSelected = (module) => {
     const moduleActions = Object.keys(actions);
@@ -306,54 +354,166 @@ const RolesForm = () => {
           </div>
 
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Permissions
-            </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-              Select the permissions for each module. Users with this role will have access to the selected actions.
-            </p>
-
-            <div className="space-y-4">
-              {Object.entries(modules).map(([moduleKey, moduleName]) => (
-                <div
-                  key={moduleKey}
-                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50"
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Permissions
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Select the permissions for each module. Users with this role will have access to the selected actions.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDeselectAllModules}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={isModuleAllSelected(moduleKey)}
-                        ref={(input) => {
-                          if (input) input.indeterminate = isModuleSomeSelected(moduleKey) && !isModuleAllSelected(moduleKey);
-                        }}
-                        onChange={(e) => handleModuleSelectAll(moduleKey, e.target.checked)}
-                        className="w-4 h-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 rounded cursor-pointer"
-                      />
-                      <h3 className="font-semibold text-gray-900 dark:text-white">{moduleName}</h3>
-                    </div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {formData.permissions[moduleKey]?.length || 0} / {Object.keys(actions).length} selected
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 ml-7">
-                    {Object.entries(actions).map(([actionKey, actionName]) => (
-                      <label
-                        key={actionKey}
-                        className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-white dark:hover:bg-gray-600 transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={hasPermission(moduleKey, actionKey)}
-                          onChange={(e) => handlePermissionChange(moduleKey, actionKey, e.target.checked)}
-                          className="w-4 h-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 rounded cursor-pointer"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">{actionName}</span>
-                      </label>
-                    ))}
-                  </div>
+                  Deselect All
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSelectAllModules}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-hover transition-colors"
+                >
+                  Select All
+                </button>
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Search modules..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {searchQuery && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Found {filteredModules.length} module(s) matching "{searchQuery}"
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+              {filteredModules.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 dark:text-gray-400">
+                    {searchQuery ? 'No modules found matching your search.' : 'No modules available.'}
+                  </p>
                 </div>
-              ))}
+              ) : (
+                filteredModules.map(([moduleKey, moduleName]) => {
+                const selectedCount = formData.permissions[moduleKey]?.length || 0;
+                const totalCount = Object.keys(actions).length;
+                const isAllSelected = isModuleAllSelected(moduleKey);
+                const isSomeSelected = isModuleSomeSelected(moduleKey);
+                
+                return (
+                  <div
+                    key={moduleKey}
+                    className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    {/* Module Header */}
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/50 dark:to-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleModuleSelectAll(moduleKey)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                            isAllSelected 
+                              ? 'bg-primary' 
+                              : isSomeSelected 
+                                ? 'bg-primary/60' 
+                                : 'bg-gray-300 dark:bg-gray-600'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              isAllSelected || isSomeSelected ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{moduleName}</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {selectedCount === totalCount ? 'All permissions granted' : `${selectedCount} of ${totalCount} permissions`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          isAllSelected 
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                            : isSomeSelected
+                              ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                        }`}>
+                          {selectedCount}/{totalCount}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Permissions Grid */}
+                    <div className="p-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {Object.entries(actions).map(([actionKey, actionName]) => {
+                          const isSelected = hasPermission(moduleKey, actionKey);
+                          const actionColors = {
+                            create: { bg: 'bg-blue-500', hover: 'hover:bg-blue-600', selected: 'bg-blue-600', text: 'text-blue-700 dark:text-blue-300' },
+                            read: { bg: 'bg-green-500', hover: 'hover:bg-green-600', selected: 'bg-green-600', text: 'text-green-700 dark:text-green-300' },
+                            update: { bg: 'bg-yellow-500', hover: 'hover:bg-yellow-600', selected: 'bg-yellow-600', text: 'text-yellow-700 dark:text-yellow-300' },
+                            delete: { bg: 'bg-red-500', hover: 'hover:bg-red-600', selected: 'bg-red-600', text: 'text-red-700 dark:text-red-300' },
+                          };
+                          const colors = actionColors[actionKey] || { bg: 'bg-gray-500', hover: 'hover:bg-gray-600', selected: 'bg-gray-600', text: 'text-gray-700 dark:text-gray-300' };
+                          
+                          return (
+                            <button
+                              key={actionKey}
+                              type="button"
+                              onClick={() => handlePermissionChange(moduleKey, actionKey, !isSelected)}
+                              className={`relative group flex items-center justify-between gap-2 p-3 rounded-lg border-2 transition-all duration-200 ${
+                                isSelected
+                                  ? `${colors.selected} border-transparent text-white shadow-md`
+                                  : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-500'
+                              }`}
+                            >
+                              <span className={`text-sm font-medium ${isSelected ? 'text-white' : colors.text}`}>
+                                {actionName}
+                              </span>
+                              <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                                isSelected 
+                                  ? 'bg-white/20' 
+                                  : 'bg-gray-200 dark:bg-gray-600 group-hover:bg-gray-300 dark:group-hover:bg-gray-500'
+                              }`}>
+                                {isSelected ? (
+                                  <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                                ) : (
+                                  <XIcon className="w-3 h-3 text-gray-400 dark:text-gray-500" strokeWidth={3} />
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }))}
             </div>
           </div>
 

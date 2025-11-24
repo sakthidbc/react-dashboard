@@ -32,6 +32,10 @@ const DynamicForm = ({ moduleConfig, apiService }) => {
         initialData[field.name] = false;
       } else if (field.type === 'date') {
         initialData[field.name] = new Date().toISOString().split('T')[0];
+      } else if (field.type === 'multiselect' || field.type === 'checkbox') {
+        initialData[field.name] = [];
+      } else if (field.type === 'json') {
+        initialData[field.name] = '{}';
       } else {
         initialData[field.name] = '';
       }
@@ -53,8 +57,18 @@ const DynamicForm = ({ moduleConfig, apiService }) => {
       fields.forEach(field => {
         if (field.type === 'date' && item[field.name]) {
           data[field.name] = new Date(item[field.name]).toISOString().split('T')[0];
+        } else if (field.type === 'datetime' && item[field.name]) {
+          const date = new Date(item[field.name]);
+          data[field.name] = date.toISOString().slice(0, 16);
+        } else if (field.type === 'time' && item[field.name]) {
+          const date = new Date(item[field.name]);
+          data[field.name] = date.toTimeString().slice(0, 5);
         } else if (field.type === 'boolean') {
           data[field.name] = item[field.name] || false;
+        } else if (field.type === 'multiselect' || field.type === 'checkbox') {
+          data[field.name] = Array.isArray(item[field.name]) ? item[field.name] : (item[field.name] ? [item[field.name]] : []);
+        } else if (field.type === 'json') {
+          data[field.name] = typeof item[field.name] === 'string' ? item[field.name] : JSON.stringify(item[field.name] || {});
         } else {
           data[field.name] = item[field.name] || '';
         }
@@ -162,7 +176,9 @@ const DynamicForm = ({ moduleConfig, apiService }) => {
         const value = formData[field.name];
         
         if (field.type === 'file' || field.type === 'image') {
-          if (value instanceof File) {
+          // Robust File check - avoids instanceof to prevent errors
+          const isFile = value && typeof value === 'object' && value.constructor && value.constructor.name === 'File';
+          if (isFile) {
             submitData.append(field.name, value);
           } else if (isEditing && !filePreviews[field.name] && originalFiles[field.name]) {
             // Mark for removal if file was removed
@@ -170,6 +186,18 @@ const DynamicForm = ({ moduleConfig, apiService }) => {
           }
         } else if (field.type === 'boolean') {
           submitData.append(field.name, value ? '1' : '0');
+        } else if (field.type === 'multiselect' || field.type === 'checkbox') {
+          // Handle arrays for multiselect and checkbox
+          if (Array.isArray(value)) {
+            submitData.append(field.name, JSON.stringify(value));
+          } else if (value !== null && value !== undefined && value !== '') {
+            submitData.append(field.name, value);
+          }
+        } else if (field.type === 'json') {
+          // Handle JSON fields
+          if (value !== null && value !== undefined && value !== '') {
+            submitData.append(field.name, typeof value === 'string' ? value : JSON.stringify(value));
+          }
         } else if (value !== null && value !== undefined && value !== '') {
           submitData.append(field.name, value);
         }
@@ -268,6 +296,165 @@ const DynamicForm = ({ moduleConfig, apiService }) => {
             onChange={handleInputChange}
             className={fieldConfig.className}
           />
+        );
+      
+      case 'time':
+        return (
+          <input
+            type="time"
+            name={field.name}
+            value={value}
+            onChange={handleInputChange}
+            className={fieldConfig.className}
+          />
+        );
+      
+      case 'color':
+        return (
+          <div className="flex items-center gap-3">
+            <input
+              type="color"
+              name={field.name}
+              value={value || '#000000'}
+              onChange={handleInputChange}
+              className="w-16 h-10 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
+            />
+            <input
+              type="text"
+              value={value || '#000000'}
+              onChange={(e) => setFormData(prev => ({ ...prev, [field.name]: e.target.value }))}
+              className={fieldConfig.className}
+              placeholder="#000000"
+              pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
+            />
+          </div>
+        );
+      
+      case 'select':
+        const selectOptions = field.options || [];
+        return (
+          <select
+            name={field.name}
+            value={value}
+            onChange={handleInputChange}
+            className={fieldConfig.className}
+          >
+            <option value="">Select {field.label}</option>
+            {selectOptions.map((option, idx) => (
+              <option key={idx} value={typeof option === 'object' ? option.value : option}>
+                {typeof option === 'object' ? option.label : option}
+              </option>
+            ))}
+          </select>
+        );
+      
+      case 'multiselect':
+        const multiOptions = field.options || [];
+        const selectedValues = Array.isArray(value) ? value : (value ? [value] : []);
+        return (
+          <div>
+            <select
+              multiple
+              name={field.name}
+              value={selectedValues}
+              onChange={(e) => {
+                const selected = Array.from(e.target.selectedOptions, option => option.value);
+                setFormData(prev => ({ ...prev, [field.name]: selected }));
+              }}
+              className={fieldConfig.className}
+              size={Math.min(multiOptions.length, 5)}
+            >
+              {multiOptions.map((option, idx) => {
+                const optValue = typeof option === 'object' ? option.value : option;
+                const optLabel = typeof option === 'object' ? option.label : option;
+                return (
+                  <option key={idx} value={optValue}>
+                    {optLabel}
+                  </option>
+                );
+              })}
+            </select>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Hold Ctrl/Cmd to select multiple options
+            </p>
+          </div>
+        );
+      
+      case 'radio':
+        const radioOptions = field.options || [];
+        return (
+          <div className="space-y-2">
+            {radioOptions.map((option, idx) => {
+              const optValue = typeof option === 'object' ? option.value : option;
+              const optLabel = typeof option === 'object' ? option.label : option;
+              return (
+                <label key={idx} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name={field.name}
+                    value={optValue}
+                    checked={value === optValue}
+                    onChange={handleInputChange}
+                    className="w-4 h-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{optLabel}</span>
+                </label>
+              );
+            })}
+          </div>
+        );
+      
+      case 'checkbox':
+        const checkboxOptions = field.options || [];
+        const checkedValues = Array.isArray(value) ? value : [];
+        return (
+          <div className="space-y-2">
+            {checkboxOptions.map((option, idx) => {
+              const optValue = typeof option === 'object' ? option.value : option;
+              const optLabel = typeof option === 'object' ? option.label : option;
+              const isChecked = checkedValues.includes(optValue);
+              return (
+                <label key={idx} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={(e) => {
+                      const newValues = e.target.checked
+                        ? [...checkedValues, optValue]
+                        : checkedValues.filter(v => v !== optValue);
+                      setFormData(prev => ({ ...prev, [field.name]: newValues }));
+                    }}
+                    className="w-4 h-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 rounded"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{optLabel}</span>
+                </label>
+              );
+            })}
+          </div>
+        );
+      
+      case 'json':
+        return (
+          <div>
+            <textarea
+              name={field.name}
+              value={typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
+              onChange={(e) => {
+                try {
+                  const parsed = JSON.parse(e.target.value);
+                  setFormData(prev => ({ ...prev, [field.name]: parsed }));
+                } catch {
+                  setFormData(prev => ({ ...prev, [field.name]: e.target.value }));
+                }
+              }}
+              rows={6}
+              className={fieldConfig.className}
+              placeholder='{"key": "value"}'
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Enter valid JSON format
+            </p>
+          </div>
         );
       
       case 'boolean':

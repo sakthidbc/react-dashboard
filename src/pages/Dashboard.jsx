@@ -151,7 +151,7 @@ const Dashboard = () => {
       bgColor: 'bg-gray-50 dark:bg-gray-900/10',
       borderColor: 'border-gray-200 dark:border-gray-800',
       items: [
-        { icon: Activity, label: 'Logs', path: '/admin/dashboard/logs', module: 'logs', gradient: 'from-indigo-500 to-purple-600' },
+        { icon: Activity, label: 'Logs', path: '/admin/dashboard/logs', module: 'logs', gradient: 'from-slate-500 to-gray-600' },
         { icon: RotateCcw, label: 'Restore', path: '/admin/dashboard/restore', module: 'restore', gradient: 'from-slate-500 to-gray-600' },
         { icon: Settings, label: 'Settings', path: '/admin/dashboard/settings', module: null, gradient: 'from-gray-500 to-slate-600' },
       ],

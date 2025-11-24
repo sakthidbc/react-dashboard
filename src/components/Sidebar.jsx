@@ -1,13 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, X, Menu, Settings, Image, Tag, Newspaper, MenuSquare, RotateCcw, Shield, Users, FileText, Images, Video, Folder, Maximize2, Share2, Navigation, Lightbulb, Code, Package, Activity } from 'lucide-react';
+import { LayoutDashboard, X, Menu, Settings, Image, Tag, Newspaper, MenuSquare, RotateCcw, Shield, Users, FileText, Images, Video, Folder, Maximize2, Share2, Navigation, Lightbulb, Code, Package, Activity, Mail, LogOut } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { useSelector } from 'react-redux';
 import { getDynamicModules, moduleToRouteConfig } from '../services/dynamicModuleService';
+import LogoutModal from './LogoutModal';
 
 const Sidebar = ({ isOpen, onToggle, position = 'vertical' }) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
   const { hasModuleAccess, hasPermission } = usePermissions();
@@ -76,6 +78,7 @@ const Sidebar = ({ isOpen, onToggle, position = 'vertical' }) => {
       { icon: Share2, label: 'Social Icons', path: '/admin/dashboard/social-icons', module: 'social_icons', action: 'read' },
       { icon: Navigation, label: 'Floating Menus', path: '/admin/dashboard/floating-menus', module: 'floating_menus', action: 'read' },
       { icon: Lightbulb, label: 'Daily Thoughts', path: '/admin/dashboard/daily-thoughts', module: 'daily_thoughts', action: 'read' },
+      { icon: Mail, label: 'Contact List', path: '/admin/dashboard/contact-list', module: 'contact_us', action: 'read' },
     ];
     
     // Create a Set of existing paths to check for duplicates
@@ -111,7 +114,7 @@ const Sidebar = ({ isOpen, onToggle, position = 'vertical' }) => {
         { icon: Code, label: 'Module Builder', path: '/admin/dashboard/module-builder', module: 'module_builder', action: 'read' },
         { icon: Activity, label: 'Logs', path: '/admin/dashboard/logs', module: 'logs', action: 'read' },
         { icon: RotateCcw, label: 'Restore', path: '/admin/dashboard/restore', module: 'restore', action: 'read' },
-        { icon: Settings, label: 'Settings', path: '/admin/dashboard/settings', module: null },
+        { icon: Settings, label: 'Settings', path: '/admin/dashboard/settings', module: 'settings', action: 'read' },
       ],
     },
   ];
@@ -139,7 +142,7 @@ const Sidebar = ({ isOpen, onToggle, position = 'vertical' }) => {
 
   const SidebarContent = () => (
     <div className="h-full flex flex-col">
-      <div className="h-14 px-4 flex items-center border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 flex-shrink-0">
+      <div className="h-14 px-4 flex items-center justify-center border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 flex-shrink-0">
         <h2 className="text-lg font-bold bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent">Dashboard</h2>
       </div>
       
@@ -177,7 +180,7 @@ const Sidebar = ({ isOpen, onToggle, position = 'vertical' }) => {
         ))}
       </nav>
       
-      <div className="p-2 border-t border-gray-200/50 dark:border-gray-700/50 flex-shrink-0">
+      <div className="p-2 border-t border-gray-200/50 dark:border-gray-700/50 flex-shrink-0 space-y-2">
         <button
           onClick={toggleTheme}
           className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-gray-700/50 transition-all duration-200"
@@ -197,6 +200,13 @@ const Sidebar = ({ isOpen, onToggle, position = 'vertical' }) => {
               <span className="text-sm font-medium">Dark Mode</span>
             </>
           )}
+        </button>
+        <button
+          onClick={() => setShowLogoutModal(true)}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-900/20 transition-all duration-200"
+        >
+          <LogOut className="w-4 h-4" />
+          <span className="text-sm font-medium">Logout</span>
         </button>
       </div>
     </div>
@@ -281,6 +291,9 @@ const Sidebar = ({ isOpen, onToggle, position = 'vertical' }) => {
           </aside>
         </>
       )}
+      
+      {/* Logout Modal */}
+      <LogoutModal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} />
     </>
   );
 };

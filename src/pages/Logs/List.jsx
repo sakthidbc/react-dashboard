@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Download, Calendar, User, Activity, Clock, AlertCircle, CheckCircle, XCircle, Eye, Edit, Trash2, Plus, LogIn, LogOut } from 'lucide-react';
+import { Search, Filter, Download, Calendar, User, Activity, Clock, AlertCircle, CheckCircle, XCircle, Eye, Edit, Trash2, Plus, LogIn, LogOut, RotateCcw } from 'lucide-react';
 import api from '../../services/apiService';
 import toast from 'react-hot-toast';
 import Can from '../../components/Can';
+import Pagination from '../../components/Pagination';
+import ConfirmModal from '../../components/ConfirmModal';
 
 // Format date helper function
 const formatDate = (dateString) => {
@@ -23,7 +25,9 @@ const LogsList = () => {
   const [filteredLogs, setFilteredLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(50);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null });
+  const [restoreConfirm, setRestoreConfirm] = useState({ isOpen: false, id: null });
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     action: '',
@@ -89,6 +93,7 @@ const LogsList = () => {
   const filterLogs = () => {
     if (!searchTerm) {
       setFilteredLogs(logs);
+      setCurrentPage(1);
       return;
     }
 
@@ -104,6 +109,34 @@ const LogsList = () => {
     });
 
     setFilteredLogs(filtered);
+    setCurrentPage(1);
+  };
+
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentLogs = filteredLogs.slice(startIndex, endIndex);
+
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`/logs/${id}`);
+      toast.success('Log deleted successfully!');
+      setDeleteConfirm({ isOpen: false, id: null });
+      fetchLogs();
+    } catch (error) {
+      toast.error('Failed to delete log');
+    }
+  };
+
+  const handleRestore = async (id) => {
+    try {
+      await api.post(`/logs/${id}/restore`);
+      toast.success('Log restored successfully!');
+      setRestoreConfirm({ isOpen: false, id: null });
+      fetchLogs();
+    } catch (error) {
+      toast.error('Failed to restore log');
+    }
   };
 
   const getActionIcon = (action) => {
@@ -364,10 +397,13 @@ const LogsList = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Status
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredLogs.map((log) => {
+                {currentLogs.map((log) => {
                   const ActionIcon = getActionIcon(log.action);
                   return (
                     <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
@@ -442,6 +478,30 @@ const LogsList = () => {
                           </span>
                         )}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <Can module="logs" action="delete">
+                            <button
+                              onClick={() => setDeleteConfirm({ isOpen: true, id: log.id })}
+                              className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </Can>
+                          {log.deleted_at && (
+                            <Can module="logs" action="update">
+                              <button
+                                onClick={() => setRestoreConfirm({ isOpen: true, id: log.id })}
+                                className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                                title="Restore"
+                              >
+                                <RotateCcw className="w-5 h-5" />
+                              </button>
+                            </Can>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -450,6 +510,45 @@ const LogsList = () => {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {filteredLogs.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          itemsPerPage={itemsPerPage}
+          totalItems={filteredLogs.length}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemName="logs"
+        />
+      )}
+
+      {/* Delete Confirm Modal */}
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, id: null })}
+        onConfirm={() => handleDelete(deleteConfirm.id)}
+        title="Delete Log"
+        message="Are you sure you want to delete this log? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
+
+      {/* Restore Confirm Modal */}
+      <ConfirmModal
+        isOpen={restoreConfirm.isOpen}
+        onClose={() => setRestoreConfirm({ isOpen: false, id: null })}
+        onConfirm={() => handleRestore(restoreConfirm.id)}
+        title="Restore Log"
+        message="Are you sure you want to restore this log?"
+        confirmText="Restore"
+        cancelText="Cancel"
+        type="success"
+      />
     </div>
   );
 };
