@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, X, Menu, Settings, Image, Tag, Newspaper, MenuSquare, RotateCcw, Shield, Users, FileText, Images, Video, Folder, Maximize2, Share2, Navigation, Lightbulb, Code, Package, Activity, Mail, LogOut } from 'lucide-react';
+import { LayoutDashboard, X, Menu, Settings, Image, Tag, Newspaper, MenuSquare, RotateCcw, Shield, Users, FileText, Images, Video, Folder, Maximize2, Share2, Navigation, Lightbulb, Code, Package, Activity, Mail, LogOut, FolderOpen } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { useSelector } from 'react-redux';
@@ -79,6 +79,7 @@ const Sidebar = ({ isOpen, onToggle, position = 'vertical' }) => {
       { icon: Navigation, label: 'Floating Menus', path: '/admin/dashboard/floating-menus', module: 'floating_menus', action: 'read' },
       { icon: Lightbulb, label: 'Daily Thoughts', path: '/admin/dashboard/daily-thoughts', module: 'daily_thoughts', action: 'read' },
       { icon: Mail, label: 'Contact List', path: '/admin/dashboard/contact-list', module: 'contact_us', action: 'read' },
+      { icon: FolderOpen, label: 'Media Manager', path: '/admin/dashboard/media', module: 'media', action: 'read' },
     ];
     
     // Create a Set of existing paths to check for duplicates

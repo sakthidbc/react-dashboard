@@ -1,44 +1,42 @@
-import { forwardRef } from 'react';
-import { getFieldConfig, getLabelClassName } from '../../config/commonFields';
-
-const Textarea = forwardRef(({ 
-  label, 
-  name, 
-  value, 
-  onChange, 
-  placeholder, 
+const Textarea = ({
+  label,
+  name,
+  value,
+  onChange,
+  placeholder,
+  error,
   required = false,
   disabled = false,
-  className = '',
   rows = 4,
-  ...props 
-}, ref) => {
-  const fieldConfig = getFieldConfig('textarea');
-  
+  className = '',
+  ...props
+}) => {
   return (
-    <div>
+    <div className={`mb-4 ${className}`}>
       {label && (
-        <label htmlFor={name} className={getLabelClassName(required)}>
-          {label} {required && <span className="text-red-500">*</span>}
+        <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
       <textarea
-        ref={ref}
         id={name}
         name={name}
         value={value || ''}
         onChange={onChange}
-        placeholder={placeholder || fieldConfig.placeholder(label || '')}
+        placeholder={placeholder}
         disabled={disabled}
-        rows={rows || fieldConfig.rows}
-        className={`${fieldConfig.className} ${className}`}
+        rows={rows}
+        className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors resize-y ${
+          error
+            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+            : 'border-gray-300 dark:border-gray-600 focus:border-primary focus:ring-primary'
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} focus:outline-none focus:ring-2 focus:ring-opacity-50`}
         {...props}
       />
+      {error && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );
-});
-
-Textarea.displayName = 'Textarea';
+};
 
 export default Textarea;
-

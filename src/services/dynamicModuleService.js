@@ -29,51 +29,25 @@ export const createDynamicModuleService = (moduleName, routeName) => {
   };
 };
 
-// Cache for dynamic modules
-let modulesCache = null;
-let cacheTimestamp = null;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
 /**
- * Get all dynamic modules from backend (cached)
+ * Get all dynamic modules from backend
  */
-export const getDynamicModules = async (forceRefresh = false) => {
+export const getDynamicModules = async () => {
   try {
-    // Return cached data if available and not expired
-    if (!forceRefresh && modulesCache && cacheTimestamp && (Date.now() - cacheTimestamp) < CACHE_DURATION) {
-      return modulesCache;
-    }
-
     // Try the active endpoint first (no permission required)
     try {
       const response = await api.get('/module-builder/active');
-      modulesCache = response.data || [];
-      cacheTimestamp = Date.now();
-      return modulesCache;
+      return response.data || [];
     } catch (activeError) {
       // Fallback to full endpoint if active endpoint fails
       const response = await api.get('/module-builder');
       const filtered = response.data.filter(module => module.is_generated && module.is_active);
-      modulesCache = filtered;
-      cacheTimestamp = Date.now();
-      return modulesCache;
+      return filtered;
     }
   } catch (error) {
     console.error('Failed to fetch dynamic modules:', error);
-    // Return cached data even if expired, as fallback
-    if (modulesCache) {
-      return modulesCache;
-    }
     return [];
   }
-};
-
-/**
- * Clear the modules cache
- */
-export const clearModulesCache = () => {
-  modulesCache = null;
-  cacheTimestamp = null;
 };
 
 /**

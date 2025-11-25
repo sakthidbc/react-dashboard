@@ -571,6 +571,40 @@ export const restoreLog = (id) => {
   return api.post(`/logs/${id}/restore`);
 };
 
+// Media Manager
+export const getMedia = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return api.get(`/media${queryString ? `?${queryString}` : ''}`);
+};
+
+export const getMediaItem = (id) => {
+  return api.get(`/media/${id}`);
+};
+
+export const uploadMedia = (data) => {
+  return api.post('/media', data, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+export const createMediaFolder = (data) => {
+  return api.post('/media', data);
+};
+
+export const updateMedia = (id, data) => {
+  return api.put(`/media/${id}`, data);
+};
+
+export const deleteMedia = (id) => {
+  return api.delete(`/media/${id}`);
+};
+
+export const getMediaTree = () => {
+  return api.get('/media/tree/folders');
+};
+
 // Contact List
 export const getContactList = (params = '') => {
   return api.get(`/contact-us${params ? '?' + params : ''}`);

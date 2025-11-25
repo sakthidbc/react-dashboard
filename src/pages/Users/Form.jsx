@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Save, ArrowLeft, Loader, Mail, User, Lock, Phone, Shield, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getUserById, createUser, updateUser, getRoles } from '../../services/apiService';
-import { TextInput } from '../../components/Form';
+import { Input } from '../../components/Form';
 import { validateForm as validateFormUtil } from '../../utils/validation';
 
 const UsersForm = () => {
@@ -196,7 +196,7 @@ const UsersForm = () => {
                 <User className="w-4 h-4 inline mr-2" />
                 Name <span className="text-red-500">*</span>
               </label>
-              <TextInput
+              <Input
                 type="text"
                 name="name"
                 value={formData.name}
@@ -212,7 +212,7 @@ const UsersForm = () => {
                 <Mail className="w-4 h-4 inline mr-2" />
                 Email <span className="text-red-500">*</span>
               </label>
-              <TextInput
+              <Input
                 type="email"
                 name="email"
                 value={formData.email}
@@ -228,7 +228,7 @@ const UsersForm = () => {
                 <Phone className="w-4 h-4 inline mr-2" />
                 Mobile
               </label>
-              <TextInput
+              <Input
                 type="text"
                 name="mobile"
                 value={formData.mobile}

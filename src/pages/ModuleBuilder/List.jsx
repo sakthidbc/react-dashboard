@@ -3,7 +3,6 @@ import { Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight, Loader, Code, Pl
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { getModuleBuilders, deleteModuleBuilder, generateModule } from '../../services/apiService';
-import { clearModulesCache } from '../../services/dynamicModuleService';
 import ConfirmModal from '../../components/ConfirmModal';
 import Can from '../../components/Can';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -68,8 +67,6 @@ const ModuleBuilderList = () => {
   const handleDelete = async (id) => {
     try {
       await deleteModuleBuilder(id);
-      // Clear cache so deleted module disappears immediately
-      clearModulesCache();
       toast.success('Module definition deleted successfully!');
       fetchModules();
       // Reload page to refresh sidebar and dashboard
@@ -85,8 +82,6 @@ const ModuleBuilderList = () => {
     try {
       setIsGenerating(true);
       await generateModule(id);
-      // Clear cache so new module appears immediately
-      clearModulesCache();
       // Dispatch custom event to notify other components
       window.dispatchEvent(new Event('moduleCacheCleared'));
       // Also set localStorage to notify other tabs

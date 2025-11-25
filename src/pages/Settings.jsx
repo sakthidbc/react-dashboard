@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Palette, Save, Users, Ban, CheckCircle } from 'lucide-react';
+import { Palette, Save, Users, Ban, CheckCircle, Loader } from 'lucide-react';
 import { getSettings, updateUserSettings, getSettingsUsers, toggleUserBlock } from '../services/apiService';
 import { usePermissions } from '../hooks/usePermissions';
 import Can from '../components/Can';
@@ -9,6 +9,8 @@ import toast from 'react-hot-toast';
 const Settings = () => {
   const { hasPermission } = usePermissions();
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [togglingUserId, setTogglingUserId] = useState(null);
   const [userSettings, setUserSettings] = useState({
     theme: localStorage.getItem('theme') || 'system',
     sidebarToggle: true,
@@ -54,10 +56,14 @@ const Settings = () => {
 
   const loadUsers = async () => {
     try {
+      setIsLoadingUsers(true);
       const response = await getSettingsUsers();
       setUsers(response.data || []);
     } catch (error) {
       console.error('Error loading users:', error);
+      toast.error('Failed to load users');
+    } finally {
+      setIsLoadingUsers(false);
     }
   };
 
@@ -103,6 +109,7 @@ const Settings = () => {
 
   const handleToggleUserBlock = async (userId) => {
     try {
+      setTogglingUserId(userId);
       const response = await toggleUserBlock(userId);
       if (response.data) {
         setUsers(users.map(user => 
@@ -115,6 +122,8 @@ const Settings = () => {
     } catch (error) {
       toast.error('Failed to update user status');
       console.error('Error toggling user block:', error);
+    } finally {
+      setTogglingUserId(null);
     }
   };
 
@@ -229,7 +238,14 @@ const Settings = () => {
               description="Block or unblock users to prevent or allow login access"
             >
             <div className="space-y-3">
-              {users.length === 0 ? (
+              {isLoadingUsers ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Loader className="w-8 h-8 text-primary animate-spin mx-auto mb-3" />
+                    <p className="text-gray-600 dark:text-gray-400">Loading users...</p>
+                  </div>
+                </div>
+              ) : users.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
                   No users found
                 </p>
@@ -258,13 +274,21 @@ const Settings = () => {
                       <Can module="settings" action="update">
                         <button
                           onClick={() => handleToggleUserBlock(user.id)}
-                          className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                          disabled={togglingUserId === user.id}
+                          className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                             user.is_blocked
                               ? 'bg-green-600 hover:bg-green-700 text-white'
                               : 'bg-red-600 hover:bg-red-700 text-white'
                           }`}
                         >
-                          {user.is_blocked ? 'Unblock' : 'Block'}
+                          {togglingUserId === user.id ? (
+                            <>
+                              <Loader className="w-4 h-4 animate-spin" />
+                              {user.is_blocked ? 'Unblocking...' : 'Blocking...'}
+                            </>
+                          ) : (
+                            user.is_blocked ? 'Unblock' : 'Block'
+                          )}
                         </button>
                       </Can>
                     </div>

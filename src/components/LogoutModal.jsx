@@ -1,14 +1,18 @@
-import { AlertTriangle, X, LogOut } from 'lucide-react';
-import { useDispatch } from 'react-redux';
+import { AlertTriangle, X, LogOut, Loader } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useState } from 'react';
 
 const LogoutModal = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { isLoading } = useSelector((state) => state.auth);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
       await dispatch(logout()).unwrap();
       toast.success('Logged out successfully');
@@ -16,6 +20,8 @@ const LogoutModal = ({ isOpen, onClose }) => {
       onClose();
     } catch (error) {
       toast.error(error || 'Failed to logout');
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -57,10 +63,20 @@ const LogoutModal = ({ isOpen, onClose }) => {
             </button>
             <button
               onClick={handleLogout}
-              className="flex-1 px-4 py-2.5 bg-accent hover:bg-accent-hover rounded-lg text-white font-medium transition-colors flex items-center justify-center gap-2"
+              disabled={isLoggingOut || isLoading}
+              className="flex-1 px-4 py-2.5 bg-accent hover:bg-accent-hover rounded-lg text-white font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <LogOut className="w-4 h-4" />
-              Logout
+              {(isLoggingOut || isLoading) ? (
+                <>
+                  <Loader className="w-4 h-4 animate-spin" />
+                  Logging out...
+                </>
+              ) : (
+                <>
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </>
+              )}
             </button>
           </div>
         </div>

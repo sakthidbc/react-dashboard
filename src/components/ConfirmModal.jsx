@@ -1,6 +1,6 @@
-import { AlertTriangle, CheckCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Loader } from 'lucide-react';
 
-const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmText = 'Confirm', cancelText = 'Cancel', type = 'danger' }) => {
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmText = 'Confirm', cancelText = 'Cancel', type = 'danger', isLoading = false }) => {
   if (!isOpen) return null;
 
   const bgColor = type === 'danger' ? 'bg-red-50 dark:bg-red-900/20' : type === 'success' ? 'bg-green-50 dark:bg-green-900/20' : 'bg-blue-50 dark:bg-blue-900/20';
@@ -34,11 +34,18 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmText 
             <button
               onClick={() => {
                 onConfirm();
-                onClose();
               }}
-              className={`w-full sm:w-auto px-4 py-2 ${buttonColor} text-white rounded-lg transition-colors font-medium`}
+              disabled={isLoading}
+              className={`w-full sm:w-auto px-4 py-2 ${buttonColor} text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
             >
-              {confirmText}
+              {isLoading ? (
+                <>
+                  <Loader className="w-4 h-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                confirmText
+              )}
             </button>
           </div>
         </div>

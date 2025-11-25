@@ -9,7 +9,7 @@ import { usePermissions } from '../hooks/usePermissions';
 import { useMemo, useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchUser } from '../store/slices/authSlice';
-import { getDynamicModules, moduleToRouteConfig, clearModulesCache } from '../services/dynamicModuleService';
+import { getDynamicModules, moduleToRouteConfig } from '../services/dynamicModuleService';
 import { Package } from 'lucide-react';
 
 const Dashboard = () => {
@@ -34,25 +34,27 @@ const Dashboard = () => {
     }
   }, [hasToken, permissions, dispatch]);
 
-  // Load modules on mount and when token/permissions change
+  // Load modules on mount - only once to avoid excessive API calls
   useEffect(() => {
     // Load modules if we have a token (don't wait for isAuthenticated)
-    if (hasToken) {
+    if (hasToken && dynamicModules.length === 0 && !isLoadingModules) {
       loadDynamicModules();
     }
-  }, [hasToken]); // Changed from isAuthenticated to hasToken
+  }, [hasToken]); // Only depend on hasToken to load once
 
-  // Refresh modules when navigating back to dashboard or when module cache is cleared
+  // Refresh modules when navigating back to dashboard
+  // But only if modules are not already loaded
   useEffect(() => {
     const handleFocus = () => {
-      if (hasToken) {
+      // Only reload if we don't have modules yet
+      if (hasToken && dynamicModules.length === 0 && !isLoadingModules) {
         loadDynamicModules();
       }
     };
     
     // Listen for custom events (for same-tab communication)
     const handleModuleChange = () => {
-      if (hasToken) {
+      if (hasToken && !isLoadingModules) {
         loadDynamicModules();
       }
     };
@@ -64,13 +66,12 @@ const Dashboard = () => {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('moduleCacheCleared', handleModuleChange);
     };
-  }, [hasToken]); // Changed from isAuthenticated to hasToken
+  }, [hasToken, dynamicModules.length, isLoadingModules]); // Include isLoadingModules to prevent duplicate calls
 
   const loadDynamicModules = async () => {
     try {
       setIsLoadingModules(true);
-      // Force refresh to get latest modules
-      const modules = await getDynamicModules(true);
+      const modules = await getDynamicModules();
       
       // Deduplicate modules by table_name to prevent duplicates
       const uniqueModules = modules.reduce((acc, module) => {
@@ -189,13 +190,15 @@ const Dashboard = () => {
   const isLoadingPermissions = !permissions || Object.keys(permissions).length === 0;
 
   // Filter modules based on permissions
-  // Only filter if permissions are loaded (not null/empty)
+  // Show all modules while loading, then filter once permissions are loaded
   const filteredCategories = useMemo(() => {
-    // If permissions are not loaded yet, return empty array (will show loading state)
-    if (isLoadingPermissions) {
-      return [];
+    // If permissions are not loaded yet, show all modules (don't filter)
+    // This prevents modules from disappearing during loading
+    if (isLoadingPermissions && hasToken) {
+      return menuCategories;
     }
     
+    // Once permissions are loaded, filter based on permissions
     return menuCategories.map(category => ({
       ...category,
       items: category.items.filter(item => {
@@ -203,7 +206,7 @@ const Dashboard = () => {
         return hasPermission(item.module, 'read');
       }),
     })).filter(category => category.items.length > 0);
-  }, [menuCategories, permissions, hasPermission, isLoadingPermissions]);
+  }, [menuCategories, permissions, hasPermission, isLoadingPermissions, hasToken]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -330,8 +333,8 @@ const Dashboard = () => {
         ))}
       </motion.div>
 
-      {/* Loading State - Show when loading modules or permissions */}
-      {(isLoadingModules || isLoadingPermissions) && filteredCategories.length === 0 && (
+      {/* Loading State - Show overlay when loading modules initially */}
+      {isLoadingModules && filteredCategories.length === 0 && (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -347,7 +350,7 @@ const Dashboard = () => {
         </motion.div>
       )}
 
-      {/* Empty State - Only show when not loading and no modules available */}
+      {/* Empty State - Only show when not loading and no modules available after permissions are loaded */}
       {!isLoadingModules && !isLoadingPermissions && filteredCategories.length === 0 && (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}

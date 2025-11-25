@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RotateCcw, Search, Image as ImageIcon, Tag, Newspaper, MenuSquare, CheckSquare, Trash2, Loader } from 'lucide-react';
+import { RotateCcw, Search, Image as ImageIcon, Tag, Newspaper, MenuSquare, CheckSquare, Trash2, Loader, Folder } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getDeletedItems, restoreItem, restoreMultipleItems, forceDeleteItem, forceDeleteMultipleItems } from '../services/apiService';
 import ConfirmModal from '../components/ConfirmModal';
@@ -10,6 +10,15 @@ const Restore = () => {
     categories: [],
     news: [],
     menus: [],
+    pages: [],
+    photo_galleries: [],
+    video_galleries: [],
+    album_galleries: [],
+    popups: [],
+    social_icons: [],
+    floating_menus: [],
+    daily_thoughts: [],
+    media: [],
   });
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -120,6 +129,8 @@ const Restore = () => {
         return Newspaper;
       case 'menus':
         return MenuSquare;
+      case 'media':
+        return Folder;
       default:
         return Tag;
     }
@@ -332,6 +343,51 @@ const Restore = () => {
             module="menus"
             items={deletedItems.menus}
             label="Menus"
+          />
+          <ModuleSection
+            module="pages"
+            items={deletedItems.pages}
+            label="Pages"
+          />
+          <ModuleSection
+            module="photo_galleries"
+            items={deletedItems.photo_galleries}
+            label="Photo Galleries"
+          />
+          <ModuleSection
+            module="video_galleries"
+            items={deletedItems.video_galleries}
+            label="Video Galleries"
+          />
+          <ModuleSection
+            module="album_galleries"
+            items={deletedItems.album_galleries}
+            label="Album Galleries"
+          />
+          <ModuleSection
+            module="popups"
+            items={deletedItems.popups}
+            label="Popups"
+          />
+          <ModuleSection
+            module="social_icons"
+            items={deletedItems.social_icons}
+            label="Social Icons"
+          />
+          <ModuleSection
+            module="floating_menus"
+            items={deletedItems.floating_menus}
+            label="Floating Menus"
+          />
+          <ModuleSection
+            module="daily_thoughts"
+            items={deletedItems.daily_thoughts}
+            label="Daily Thoughts"
+          />
+          <ModuleSection
+            module="media"
+            items={deletedItems.media}
+            label="Media"
           />
         </div>
       )}

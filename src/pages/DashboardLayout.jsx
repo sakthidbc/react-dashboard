@@ -35,17 +35,21 @@ const DashboardLayout = () => {
   };
 
   useEffect(() => {
-    if (!token) {
+    const tokenFromStorage = localStorage.getItem('token');
+    const currentToken = token || tokenFromStorage;
+    
+    if (!currentToken) {
       navigate('/admin/login');
       return;
     }
 
     // Always fetch user data to ensure permissions are loaded
     // This ensures permissions are available when Dashboard renders
-    if (token && (!isAuthenticated || !permissions || Object.keys(permissions).length === 0)) {
+    // Only fetch if we don't have permissions yet to avoid excessive API calls
+    if (currentToken && (!permissions || Object.keys(permissions).length === 0)) {
       dispatch(fetchUser());
     }
-  }, [token, isAuthenticated, permissions, dispatch, navigate]);
+  }, [token, permissions, dispatch, navigate]);
 
   useEffect(() => {
     const handleSidebarPositionChange = (event) => {
@@ -70,12 +74,22 @@ const DashboardLayout = () => {
     };
   }, []);
 
-  if (!isAuthenticated) {
+  // Show loading only if we have a token but no user data yet
+  // Don't block if we have token but permissions are still loading
+  const tokenFromStorage = localStorage.getItem('token');
+  const hasToken = token || tokenFromStorage;
+  
+  if (hasToken && !isAuthenticated && (!permissions || Object.keys(permissions).length === 0)) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
+  }
+  
+  // If no token at all, redirect (handled by useEffect above)
+  if (!hasToken) {
+    return null;
   }
 
   const isVertical = sidebarPosition === 'vertical';

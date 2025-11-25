@@ -188,8 +188,11 @@ const AlbumGalleriesList = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <Loader className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Loading album galleries...</p>
+        </div>
       </div>
     );
   }
